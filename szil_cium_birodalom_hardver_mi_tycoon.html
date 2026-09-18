@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Szilícium Birodalom: Hardver & MI Tycoon</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            950: '#030712',
+                            900: '#0b1120',
+                            850: '#111827',
+                            800: '#1f2937',
+                            700: '#374151',
+                            cyan: '#00f2fe',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            purple: '#8b5cf6'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            background-color: #030712;
+            color: #f1f5f9;
+            font-family: 'Rajdhani', sans-serif;
+            overflow-x: hidden;
+        }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        .font-mono { font-family: 'Fira Code', monospace; }
+
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.82);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 242, 254, 0.15);
+        }
+        .glass-panel:hover {
+            border-color: rgba(0, 242, 254, 0.35);
+        }
+        
+        .pulse-afford {
+            animation: pulse-border 1.8s infinite ease-in-out;
+        }
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 0 10px rgba(16, 185, 129, 0.2); }
+            50% { border-color: rgba(16, 185, 129, 0.9); box-shadow: 0 0 20px rgba(16, 185, 129, 0.45); }
+        }
+
+        @keyframes float-num {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, 0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -80px) scale(1.3);
+            }
+        }
+        .floating-cash {
+            position: absolute;
+            pointer-events: none;
+            animation: float-num 0.85s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 800;
+            z-index: 60;
+            text-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0b1120; }
+        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00f2fe; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-cyber-950 text-slate-100 selection:bg-cyan-500 selection:text-black">
+
+    <!-- FELSŐ FEJLÉC ÉS KÖLTSÉGVETÉSI SÁV -->
+    <header class="glass-panel sticky top-0 z-40 px-4 py-3 border-b border-cyan-500/20 bg-cyber-950/95 flex flex-wrap items-center justify-between gap-3 shadow-xl">
+        <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-cyber-950 text-2xl font-black shadow-lg shadow-cyan-500/30">
+                <i class="fa-solid fa-microchip"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-orbitron font-extrabold text-lg sm:text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-white to-emerald-300">
+                        SZILÍCIUM BIRODALOM
+                    </h1>
+                </div>
+                <div class="text-xs text-slate-400 flex items-center gap-2">
+                    <span id="companyTierBadge" class="text-cyan-400 font-semibold font-orbitron">1. KORSZAK: GARÁZSMŰHELY</span>
+                    <span class="text-slate-600">•</span>
+                    <span id="autoSaveIndicator" class="text-emerald-400 text-[11px]"><i class="fa-solid fa-cloud-arrow-up"></i> Mentve</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Valuták és mérőszámok -->
+        <div class="flex items-center gap-2 sm:gap-4 flex-wrap">
+            <!-- Pénz (Készpénz) -->
+            <div class="bg-cyber-900/90 border border-emerald-500/40 px-3.5 py-1.5 rounded-2xl flex items-center gap-2.5 shadow-lg shadow-emerald-500/10">
+                <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-base">
+                    <i class="fa-solid fa-dollar-sign"></i>
+                </div>
+                <div>
+                    <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Készpénz Vagyon</div>
+                    <div id="cashDisplay" class="font-orbitron font-black text-lg sm:text-xl text-emerald-300">$0</div>
+                </div>
+            </div>
+
+            <!-- Passzív bevétel (másodpercenként) -->
+            <div class="bg-cyber-900/90 border border-cyan-500/30 px-3.5 py-1.5 rounded-2xl flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold text-base">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div>
+                    <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Termelés</div>
+                    <div id="perSecDisplay" class="font-orbitron font-bold text-base sm:text-lg text-cyan-300">+$0/mp</div>
+                </div>
+            </div>
+
+            <!-- Kvantum Chipek (Prestige bónusz) -->
+            <div class="bg-cyber-900/90 border border-amber-500/30 px-3 py-1.5 rounded-2xl flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm">
+                    <i class="fa-solid fa-gem"></i>
+                </div>
+                <div>
+                    <div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Q-Chipek</div>
+                    <div id="qChipsDisplay" class="font-orbitron font-bold text-sm sm:text-base text-amber-400">0 db</div>
+                </div>
+            </div>
+
+            <!-- Hang kapcsoló -->
+            <button id="soundToggleBtn" class="w-9 h-9 rounded-xl bg-cyber-850 border border-slate-700 hover:border-cyan-400 text-cyan-400 flex items-center justify-center transition-all cursor-pointer">
+                <i id="soundIcon" class="fa-solid fa-volume-high"></i>
+            </button>
+        </div>
+    </header>
+
+    <nav class="bg-cyber-900/90 border-b border-slate-800 px-4 py-2 flex items-center gap-2 overflow-x-auto text-sm font-semibold z-30">
+        <button class="nav-btn active px-4 py-2 rounded-xl flex items-center gap-2 bg-cyan-500 text-cyber-950 font-orbitron font-bold cursor-pointer transition-all" data-tab="tab-factory">
+            <i class="fa-solid fa-industry"></i> <span>Félvezető Gyártás</span>
+        </button>
+        <button class="nav-btn px-4 py-2 rounded-xl flex items-center gap-2 text-slate-400 hover:text-white font-orbitron font-bold cursor-pointer transition-all" data-tab="tab-upgrades">
+            <i class="fa-solid fa-microchip"></i> <span>Fejlesztések (<span id="upgradesAvailableCount">0</span>)</span>
+        </button>
+        <button class="nav-btn px-4 py-2 rounded-xl flex items-center gap-2 text-slate-400 hover:text-white font-orbitron font-bold cursor-pointer transition-all" data-tab="tab-headquarters">
+            <i class="fa-solid fa-building"></i> <span>Korszakok & HQ</span>
+        </button>
+        <button class="nav-btn px-4 py-2 rounded-xl flex items-center gap-2 text-slate-400 hover:text-white font-orbitron font-bold cursor-pointer transition-all" data-tab="tab-ipo">
+            <i class="fa-solid fa-chart-line"></i> <span>Tőzsde & Prestige</span>
+        </button>
+        <button class="nav-btn px-4 py-2 rounded-xl flex items-center gap-2 text-slate-400 hover:text-white font-orbitron font-bold cursor-pointer transition-all" data-tab="tab-stats">
+            <i class="fa-solid fa-sliders"></i> <span>Mentés & Adatok</span>
+        </button>
+    </nav>
+
+    <main class="flex-1 p-4 md:p-6 max-w-7xl w-full mx-auto relative z-10">
+
+        <!-- 1. FÜL: GYÁRTÁS (Kattintó + 12 Automata gép) -->
+        <section id="tab-factory" class="tab-pane block space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- Bal oldali Manuális Gyártóterem -->
+                <div class="lg:col-span-4 flex flex-col gap-4">
+                    <div class="glass-panel rounded-3xl p-6 text-center relative overflow-hidden flex flex-col items-center shadow-2xl border border-cyan-500/20">
+                        <div class="text-[11px] uppercase tracking-widest text-cyan-400 font-orbitron font-bold mb-1">Kézi Prototípus Gyártás</div>
+                        <h2 id="manualChipName" class="text-xl font-orbitron font-black text-white">Próbapaneles ESP-32</h2>
+                        <p class="text-xs text-slate-400 mt-1 mb-6">Kattints a szilícium lapkára a prototípusok azonnali eladásához!</p>
+
+                        <!-- Nagy Interaktív Szilícium Lapka (Clicker) -->
+                        <div class="relative flex items-center justify-center my-2">
+                            <button id="waferClicker" class="w-48 h-48 sm:w-56 sm:h-56 rounded-full bg-gradient-to-tr from-cyan-950 via-cyber-900 to-slate-900 border-4 border-cyan-400 flex flex-col items-center justify-center p-4 transition-transform active:scale-90 hover:scale-105 shadow-[0_0_35px_rgba(0,242,254,0.35)] cursor-pointer relative group">
+                                <div class="absolute inset-2 rounded-full border border-cyan-400/30 border-dashed animate-[spin_60s_linear_infinite]"></div>
+                                <i id="waferIcon" class="fa-solid fa-microchip text-5xl text-cyan-300 drop-shadow-[0_0_15px_rgba(0,242,254,0.8)] group-hover:rotate-12 transition-transform"></i>
+                                <span class="mt-4 font-orbitron text-[11px] font-bold tracking-wider text-cyan-200">SZILÍCIUM GYÁRTÁS</span>
+                                <span id="clickWorthText" class="text-xs text-emerald-400 font-mono font-bold">+$1 / katt</span>
+                            </button>
+                            <div id="floatContainer" class="absolute inset-0 pointer-events-none"></div>
+                        </div>
+
+                        <!-- Folyékony Nitrogén Túlhúzás (Overclock) -->
+                        <div class="w-full mt-5 bg-cyber-950/90 border border-slate-800 p-4 rounded-2xl text-left">
+                            <div class="flex justify-between items-center text-xs font-orbitron mb-2">
+                                <span class="text-amber-400 font-bold flex items-center gap-1.5">
+                                    <i class="fa-solid fa-fire-flame-curved"></i> Kriogén Túlhúzás
+                                </span>
+                                <span id="overclockTimerText" class="text-slate-400 font-mono">KÉSZ (x1.0)</span>
+                            </div>
+                            <div class="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-800 mb-3">
+                                <div id="overclockProgress" class="h-full bg-gradient-to-r from-amber-400 to-rose-500 rounded-full transition-all duration-100" style="width: 0%"></div>
+                            </div>
+                            <button id="overclockBtn" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-cyber-950 font-orbitron font-extrabold text-xs uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-amber-500/20 cursor-pointer">
+                                3X-OS TÚLHÚZÁS INDÍTÁSA (15 MP)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Jobb oldali Automata Gyártósorok -->
+                <div class="lg:col-span-8 flex flex-col gap-4">
+                    <!-- Vásárlási mennyiség választó (1x, 10x, 100x, MAX) -->
+                    <div class="glass-panel p-3.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 border border-slate-800">
+                        <div>
+                            <h3 class="font-orbitron font-bold text-base text-white flex items-center gap-2">
+                                <i class="fa-solid fa-network-wired text-cyan-400"></i> Automata Géppark & Létesítmények
+                            </h3>
+                            <p class="text-xs text-slate-400">Passzív, másodpercenként folyamatosan termelő gépsorok.</p>
+                        </div>
+
+                        <div class="flex items-center gap-1.5 bg-cyber-950 p-1 rounded-xl border border-slate-700 text-xs font-orbitron font-bold">
+                            <span class="text-slate-400 px-2 text-[11px]">Vétel:</span>
+                            <button class="bulk-btn active px-3 py-1.5 rounded-lg bg-cyan-500 text-cyber-950 transition-all cursor-pointer" data-multiplier="1">1x</button>
+                            <button class="bulk-btn px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-800 transition-all cursor-pointer" data-multiplier="10">10x</button>
+                            <button class="bulk-btn px-3 py-1.5 rounded-lg text-slate-300 hover:bg-slate-800 transition-all cursor-pointer" data-multiplier="100">100x</button>
+                            <button class="bulk-btn px-3 py-1.5 rounded-lg text-amber-400 hover:bg-amber-950/40 transition-all cursor-pointer" data-multiplier="MAX">MAX</button>
+                        </div>
+                    </div>
+
+                    <!-- 12 db Automata Termelőgép listája -->
+                    <div id="buildingList" class="space-y-3">
+                        <!-- JS generálja a kártyákat dinamikusan -->
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 2. FÜL: FEJLESZTÉSEK (Átlátható, duplázó kártyák) -->
+        <section id="tab-upgrades" class="tab-pane hidden space-y-4">
+            <div class="glass-panel p-5 rounded-2xl border border-slate-800">
+                <h3 class="text-xl font-orbitron font-black text-white flex items-center gap-2">
+                    <i class="fa-solid fa-flask text-cyan-400"></i> Technológiai Fejlesztések
+                </h3>
+                <p class="text-xs text-slate-400 mt-1">
+                    Egyszeri vásárlások, amelyek megduplázzák vagy megtriplázzák a gépeid és a kattintásod hatékonyságát!
+                </p>
+            </div>
+
+            <!-- Fejlesztések rácsa -->
+            <div id="upgradesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- JS tölti fel az elérhető fejlesztéseket -->
+            </div>
+        </section>
+
+        <!-- 3. FÜL: KORSZAKOK & VÁLLALATI SZÉKHÁZ -->
+        <section id="tab-headquarters" class="tab-pane hidden space-y-4">
+            <div class="glass-panel p-5 rounded-2xl border border-slate-800">
+                <h3 class="text-xl font-orbitron font-black text-white flex items-center gap-2">
+                    <i class="fa-solid fa-city text-emerald-400"></i> Vállalati Korszakok & Székházak
+                </h3>
+                <p class="text-xs text-slate-400 mt-1">
+                    Lépj magasabb cégkorszakba a globális szorzók feloldásához és a cégérték megsokszorozásához!
+                </p>
+            </div>
+
+            <div id="headquartersList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- JS generálja a HQ szinteket -->
+            </div>
+        </section>
+
+        <!-- 4. FÜL: TŐZSDE & PRESTIGE (Q-Chip rendszer) -->
+        <section id="tab-ipo" class="tab-pane hidden space-y-6">
+            <div class="glass-panel p-6 sm:p-8 rounded-3xl border border-amber-500/40 text-center max-w-2xl mx-auto shadow-2xl">
+                <div class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-3xl mx-auto mb-4">
+                    <i class="fa-solid fa-rocket"></i>
+                </div>
+                <h3 class="text-2xl sm:text-3xl font-black font-orbitron text-white">NASDAQ TŐZSDEI BEVEZETÉS (IPO)</h3>
+                <p class="text-sm text-slate-300 mt-2 max-w-lg mx-auto leading-relaxed">
+                    Vidd a céged a Wall Streetre! Újraindítod a készpénzedet és az automata gépeidet, de cserébe permanens <strong class="text-amber-400">Kvantum Chipeket (Q-Chip)</strong> kapsz. Minden egyes Q-Chip <strong class="text-amber-400">+10% állandó termelésbónuszt</strong> biztosít minden jövőbeli játékmenetedhez!
+                </p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6 text-left">
+                    <div class="bg-cyber-950 p-4 rounded-2xl border border-slate-800">
+                        <div class="text-xs text-slate-400 font-orbitron">Összes Megkeresett Vállalati Vagyon</div>
+                        <div id="ipoLifetimeDisplay" class="text-2xl font-black font-orbitron text-cyan-300">$0</div>
+                    </div>
+                    <div class="bg-cyber-950 p-4 rounded-2xl border border-slate-800">
+                        <div class="text-xs text-amber-400 font-orbitron">Megszerezhető Q-Chipek</div>
+                        <div id="ipoGainDisplay" class="text-2xl font-black font-orbitron text-amber-400">+0 Q-Chip</div>
+                    </div>
+                </div>
+
+                <button id="ipoExecuteBtn" class="w-full py-4 px-8 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-cyber-950 font-orbitron font-black text-base tracking-wider transition-all transform active:scale-95 shadow-xl shadow-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer" disabled>
+                    TŐZSDÉRE LÉPÉS ÉS ÚJJÁSZÜLETÉS
+                </button>
+            </div>
+        </section>
+
+        <!-- 5. FÜL: MENTÉS, ADATÁTVITEL & STATISZTIKA -->
+        <section id="tab-stats" class="tab-pane hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- Statisztika Kártya -->
+                <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-3">
+                    <h3 class="text-lg font-orbitron font-bold text-cyan-400 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-simple"></i> Részletes Statisztikák
+                    </h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between py-1.5 border-b border-slate-800">
+                            <span class="text-slate-400">Eddigi összes megkeresett pénz:</span>
+                            <span id="statTotalCash" class="font-orbitron font-bold text-emerald-400">$0</span>
+                        </div>
+                        <div class="flex justify-between py-1.5 border-b border-slate-800">
+                            <span class="text-slate-400">Kézi szilícium kattintások:</span>
+                            <span id="statClicks" class="font-orbitron font-bold text-white">0</span>
+                        </div>
+                        <div class="flex justify-between py-1.5 border-b border-slate-800">
+                            <span class="text-slate-400">Birtokolt Q-Chipek:</span>
+                            <span id="statQChips" class="font-orbitron font-bold text-amber-400">0 db (+0%)</span>
+                        </div>
+                        <div class="flex justify-between py-1.5 border-b border-slate-800">
+                            <span class="text-slate-400">Megvalósított IPO-k száma:</span>
+                            <span id="statIpos" class="font-orbitron font-bold text-cyan-300">0</span>
+                        </div>
+                        <div class="flex justify-between py-1.5">
+                            <span class="text-slate-400">Mentési állapot:</span>
+                            <span class="font-orbitron font-bold text-emerald-400">Automatikus (Másodpercenként)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mentéskezelő Kártya (Átvitel Sulis Gépre) -->
+                <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-3">
+                    <h3 class="text-lg font-orbitron font-bold text-emerald-400 flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i> Mentés Átvitele (Otthon &rarr; Suli)
+                    </h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        A játék automatikusan ment ebben a böngészőben. Ha a sulis gépen akarod folytatni ahol otthon abbahagytad, kattints az <strong>EXPORTÁLÁS</strong> gombra, és másold be a kódot ott!
+                    </p>
+
+                    <div class="flex flex-col gap-2.5 pt-2">
+                        <button id="exportCodeBtn" class="py-2.5 px-4 rounded-xl bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/50 text-cyan-300 font-orbitron font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer">
+                            <i class="fa-solid fa-copy"></i> MENTÉSI KÓD MÁSOLÁSA (EXPORT)
+                        </button>
+                        <button id="importCodeBtn" class="py-2.5 px-4 rounded-xl bg-cyber-850 hover:bg-cyber-800 border border-slate-700 text-slate-300 font-orbitron font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer">
+                            <i class="fa-solid fa-file-import"></i> MENTÉSI KÓD BEILLESZTÉSE (IMPORT)
+                        </button>
+                        <button id="wipeSaveBtn" class="mt-2 py-2.5 px-4 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/40 text-rose-300 font-orbitron font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer">
+                            <i class="fa-solid fa-trash-can"></i> MENTÉS TÖRLÉSE & TISZTA ÚJRAKEZDÉS
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Offline Jövedelem Felugró Ablak -->
+    <div id="offlineModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel rounded-3xl max-w-md w-full p-6 text-center border border-cyan-500/40 shadow-2xl">
+            <div class="w-14 h-14 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-2xl mx-auto mb-4 border border-cyan-500/40">
+                <i class="fa-solid fa-business-time"></i>
+            </div>
+            <h3 class="font-orbitron font-black text-2xl text-white">ÜDV ÚJRA, FŐNÖK!</h3>
+            <p class="text-xs text-slate-300 mt-1 mb-4">A szervereid és automata gyártósoraid gőzerővel termeltek amíg nem voltál itt!</p>
+
+            <div class="bg-cyber-950 p-4 rounded-2xl border border-slate-800 space-y-2 mb-6 text-left">
+                <div class="flex justify-between text-xs font-orbitron">
+                    <span class="text-slate-400">Távolléti Időtartam:</span>
+                    <span id="offlineTimeDisplay" class="text-cyan-300 font-bold">0ó 0p</span>
+                </div>
+                <div class="flex justify-between text-base font-orbitron font-bold">
+                    <span class="text-emerald-400">Generált Passzív Készpénz:</span>
+                    <span id="offlineEarningsDisplay" class="text-emerald-400">+$0</span>
+                </div>
+            </div>
+
+            <button id="claimOfflineBtn" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-cyber-950 font-orbitron font-black text-sm uppercase tracking-wider transition-all shadow-lg shadow-cyan-500/30 cursor-pointer">
+                TŐKE BEGYŰJTÉSE & MEHET A JÁTÉK
+            </button>
+        </div>
+    </div>
+
+    <!-- Export / Import Kód Modal -->
+    <div id="codeModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-panel rounded-2xl max-w-lg w-full p-6 border border-slate-700">
+            <h4 id="codeModalTitle" class="font-orbitron font-bold text-lg text-white mb-2">Mentési Kód</h4>
+            <p id="codeModalDesc" class="text-xs text-slate-400 mb-3">Itt találod a játékállásodat:</p>
+            <textarea id="codeModalTextarea" class="w-full h-32 bg-cyber-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-cyan-300 select-text outline-none focus:border-cyan-500"></textarea>
+            <div class="flex justify-end gap-2 mt-4">
+                <button id="codeModalCancelBtn" class="px-4 py-2 rounded-xl bg-cyber-850 text-slate-300 text-xs font-bold font-orbitron cursor-pointer">MÉGSE</button>
+                <button id="codeModalActionBtn" class="px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-cyber-950 text-xs font-black font-orbitron cursor-pointer">RENDBEN</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    class WebAudioSFX {
+        constructor() {
+            this.ctx = null;
+            this.muted = false;
+        }
+
+        init() {
+            if (!this.ctx) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioCtx();
+            }
+            if (this.ctx.state === 'suspended') {
+                this.ctx.resume();
+            }
+        }
+
+        playTone(freq, type = 'sine', duration = 0.06, gain = 0.12) {
+            if (this.muted) return;
+            try {
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const g = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                g.gain.setValueAtTime(gain, this.ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                osc.connect(g);
+                g.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        click() {
+            this.playTone(850 + Math.random() * 200, 'triangle', 0.04, 0.09);
+        }
+
+        buy() {
+            this.playTone(523.25, 'sine', 0.08, 0.12);
+            setTimeout(() => this.playTone(659.25, 'sine', 0.1, 0.12), 60);
+        }
+
+        overclock() {
+            this.playTone(260, 'sawtooth', 0.2, 0.15);
+            setTimeout(() => this.playTone(520, 'sawtooth', 0.25, 0.18), 80);
+        }
+
+        prestige() {
+            [440, 554, 659, 880].forEach((f, i) => {
+                setTimeout(() => this.playTone(f, 'sine', 0.2, 0.15), i * 80);
+            });
+        }
+    }
+
+    const sfx = new WebAudioSFX();
+    </script>
+
+    <script>
+    // 12 AUTOMATA GÉP LÉPCSŐZETESEN FELÉPÍTETT ÁRAKKAL ÉS ERŐVEL
+    const BUILDINGS = [
+        {
+            id: 'intern',
+            name: 'Kézi Forrasztó Diákmunkás',
+            desc: 'Lelkes egyetemista forrasztópákával az asztalánál.',
+            baseCost: 15,
+            baseRPS: 0.8,
+            costMult: 1.15,
+            icon: 'fa-solid fa-user-gear'
+        },
+        {
+            id: 'smd_bot',
+            name: 'SMD Felületszerelő Robot',
+            desc: 'Gyors automata robotfej 30.000 alkatrész/óra beültetéssel.',
+            baseCost: 100,
+            baseRPS: 5,
+            costMult: 1.15,
+            icon: 'fa-solid fa-robot'
+        },
+        {
+            id: 'cleanroom',
+            name: 'Tisztaszoba Tesztelő Állomás',
+            desc: 'Pormentes kabin mikroszkópos lapka ellenőrzéshez.',
+            baseCost: 800,
+            baseRPS: 32,
+            costMult: 1.15,
+            icon: 'fa-solid fa-microscope'
+        },
+        {
+            id: 'liquid_rack',
+            name: 'Merítéses Hűtésű Szerverállvány',
+            desc: 'Folyadékba merített túlhúzott AI tenzormagok.',
+            baseCost: 5500,
+            baseRPS: 180,
+            costMult: 1.15,
+            icon: 'fa-solid fa-snowflake'
+        },
+        {
+            id: 'euv_stepper',
+            name: 'EUV Fotolitográfiai Scanner',
+            desc: '13.5 nm hullámhosszú extrém ultraibolya szilíciumrajzoló.',
+            baseCost: 40000,
+            baseRPS: 1100,
+            costMult: 1.15,
+            icon: 'fa-solid fa-sun'
+        },
+        {
+            id: 'photonic_lab',
+            name: 'Fotonikus Lézeres Mátrix Klaszter',
+            desc: 'Fénysebességű optikai számítás minimális energiaigénnyel.',
+            baseCost: 300000,
+            baseRPS: 6800,
+            costMult: 1.15,
+            icon: 'fa-solid fa-bolt'
+        },
+        {
+            id: 'supercomputer',
+            name: 'Ipari LLM Tréning Adatközpont',
+            desc: 'Több tízezer összekapcsolt GPU neurális architektúrákhoz.',
+            baseCost: 2200000,
+            baseRPS: 42000,
+            costMult: 1.15,
+            icon: 'fa-solid fa-server'
+        },
+        {
+            id: 'quantum_fab',
+            name: 'Kriogén Qubit Összeszerelő Üzem',
+            desc: 'Abszolút nulla fok közeli szupravezető kvantumlapkák.',
+            baseCost: 18000000,
+            baseRPS: 280000,
+            costMult: 1.15,
+            icon: 'fa-solid fa-atom'
+        },
+        {
+            id: 'orbital_foundry',
+            name: 'Orbitális Gravitációmentes Kohó',
+            desc: 'Világűrben előállított kristálytiszta monokristályos szilícium.',
+            baseCost: 150000000,
+            baseRPS: 2100000,
+            costMult: 1.15,
+            icon: 'fa-solid fa-satellite'
+        },
+        {
+            id: 'fusion_cluster',
+            name: 'Fúziós Energiameghajtású Szuperszámítógép',
+            desc: 'Kimeríthetetlen tiszta energia a világ legnagyobb AI modelljeinek.',
+            baseCost: 1200000000,
+            baseRPS: 16000000,
+            costMult: 1.15,
+            icon: 'fa-solid fa-circle-nodes'
+        },
+        {
+            id: 'dyson_swarm',
+            name: 'Dyson-raj Napenergia Számítási Háló',
+            desc: 'A Nap körül keringő számítási egységek trilliói.',
+            baseCost: 10000000000,
+            baseRPS: 130000000,
+            costMult: 1.15,
+            icon: 'fa-solid fa-ring'
+        },
+        {
+            id: 'matrioshka_brain',
+            name: 'Matrjoska Agy Kozmikus Intelligencia',
+            desc: 'Teljes csillagrendszert felölelő szintetikus szuperelme.',
+            baseCost: 100000000000,
+            baseRPS: 1100000000,
+            costMult: 1.15,
+            icon: 'fa-solid fa-brain'
+        }
+    ];
+
+    // TECHNOLÓGIAI FEJLESZTÉSEK (EGYSZERI MEGVÁSÁROLHATÓ DUPLÁZÓK)
+    const UPGRADES = [
+        {
+            id: 'click_1',
+            name: 'Ergonomikus Forrasztópáka',
+            desc: 'A kézi kattintás értéke a duplájára (x2) nő.',
+            cost: 100,
+            reqTotal: 50,
+            apply: (g) => { g.clickMult *= 2; }
+        },
+        {
+            id: 'intern_1',
+            name: 'Prémium Forrasztóón & Folyató',
+            desc: 'A Diákmunkások hatékonysága megduplázódik (x2).',
+            cost: 250,
+            reqTotal: 150,
+            apply: (g) => { g.buildingMults['intern'] = (g.buildingMults['intern'] || 1) * 2; }
+        },
+        {
+            id: 'click_2',
+            name: 'Precíziós Mikroszkóp Munkaállomás',
+            desc: 'A kézi kattintás értéke újra megduplázódik (x2).',
+            cost: 1200,
+            reqTotal: 800,
+            apply: (g) => { g.clickMult *= 2; }
+        },
+        {
+            id: 'smd_1',
+            name: 'Lézeres SMD Pozicionáló Optika',
+            desc: 'Az SMD Felületszerelő Robotok beültetési sebessége megduplázódik (x2).',
+            cost: 2000,
+            reqTotal: 1500,
+            apply: (g) => { g.buildingMults['smd_bot'] = (g.buildingMults['smd_bot'] || 1) * 2; }
+        },
+        {
+            id: 'cleanroom_1',
+            name: 'Nagysebességű HEPA Légzsilipek',
+            desc: 'A Tisztaszoba Tesztelők hozama duplázódik (x2).',
+            cost: 12000,
+            reqTotal: 8000,
+            apply: (g) => { g.buildingMults['cleanroom'] = (g.buildingMults['cleanroom'] || 1) * 2; }
+        },
+        {
+            id: 'click_3',
+            name: 'Autonóm Szilícium Marató Készlet',
+            desc: 'A kézi kattintás értéke a háromszorosára (x3) nő.',
+            cost: 30000,
+            reqTotal: 20000,
+            apply: (g) => { g.clickMult *= 3; }
+        },
+        {
+            id: 'liquid_1',
+            name: 'Fluorokristály Dielektromos Hűtőfolyadék',
+            desc: 'A Merítéses Hűtésű Rackek termelése megduplázódik (x2).',
+            cost: 80000,
+            reqTotal: 50000,
+            apply: (g) => { g.buildingMults['liquid_rack'] = (g.buildingMults['liquid_rack'] || 1) * 2; }
+        },
+        {
+            id: 'euv_1',
+            name: 'Zeiss Hyper-NA Tükörrendszer',
+            desc: 'Az EUV Fotolitográfiai Scannerek hatásfoka megduplázódik (x2).',
+            cost: 500000,
+            reqTotal: 300000,
+            apply: (g) => { g.buildingMults['euv_stepper'] = (g.buildingMults['euv_stepper'] || 1) * 2; }
+        },
+        {
+            id: 'global_1',
+            name: 'FP8 Neurális Mátrix Súlykvantálás',
+            desc: 'Minden egyes épületed globális termelése +50%-kal növekszik.',
+            cost: 2000000,
+            reqTotal: 1500000,
+            apply: (g) => { g.globalPassiveMult *= 1.5; }
+        },
+        {
+            id: 'photonic_1',
+            name: 'Koherens Lézerhullám Vezetők',
+            desc: 'A Fotonikus Klaszterek kapacitása megduplázódik (x2).',
+            cost: 5000000,
+            reqTotal: 3500000,
+            apply: (g) => { g.buildingMults['photonic_lab'] = (g.buildingMults['photonic_lab'] || 1) * 2; }
+        },
+        {
+            id: 'super_1',
+            name: 'NVLink Optikai Switch Hálózat',
+            desc: 'A Szuperszámítógép Adatközpontok termelése megduplázódik (x2).',
+            cost: 35000000,
+            reqTotal: 25000000,
+            apply: (g) => { g.buildingMults['supercomputer'] = (g.buildingMults['supercomputer'] || 1) * 2; }
+        },
+        {
+            id: 'quantum_1',
+            name: 'Topológiai Qubit Hibaellenőrzés',
+            desc: 'A Kvantum Lapka Üzemek hatásfoka megduplázódik (x2).',
+            cost: 250000000,
+            reqTotal: 180000000,
+            apply: (g) => { g.buildingMults['quantum_fab'] = (g.buildingMults['quantum_fab'] || 1) * 2; }
+        },
+        {
+            id: 'orbital_1',
+            name: 'Zéró-G Folyékony Fémtükör Kristályosítás',
+            desc: 'Az Orbitális Kohók hozama megduplázódik (x2).',
+            cost: 2000000000,
+            reqTotal: 1500000000,
+            apply: (g) => { g.buildingMults['orbital_foundry'] = (g.buildingMults['orbital_foundry'] || 1) * 2; }
+        }
+    ];
+
+    // VÁLLALATI KORSZAKOK / HQ SZINTEK
+    const HEADQUARTERS = [
+        {
+            level: 1,
+            name: 'Garázsműhely',
+            cost: 0,
+            bonus: 'Kezdeti bázis (1.0x szorzó)',
+            mult: 1.0,
+            icon: 'fa-solid fa-warehouse'
+        },
+        {
+            level: 2,
+            name: 'Tech Inkubátor Iroda',
+            cost: 5000,
+            bonus: '+25% minden bevételre',
+            mult: 1.25,
+            icon: 'fa-solid fa-building'
+        },
+        {
+            level: 3,
+            name: 'Szilícium Ipari Park',
+            cost: 150000,
+            bonus: '+50% minden bevételre',
+            mult: 1.50,
+            icon: 'fa-solid fa-industry'
+        },
+        {
+            level: 4,
+            name: 'Globális Félvezető Megavállalat',
+            cost: 10000000,
+            bonus: '+100% minden bevételre (2x)',
+            mult: 2.0,
+            icon: 'fa-solid fa-city'
+        },
+        {
+            level: 5,
+            name: 'Kvantum Kutató Központ',
+            cost: 500000000,
+            bonus: '+200% minden bevételre (3x)',
+            mult: 3.0,
+            icon: 'fa-solid fa-atom'
+        },
+        {
+            level: 6,
+            name: 'Csillagközi AI Szindikátus',
+            cost: 50000000000,
+            bonus: '+400% minden bevételre (5x)',
+            mult: 5.0,
+            icon: 'fa-solid fa-globe'
+        }
+    ];
+    </script>
+
+    <script>
+    const SAVE_STORAGE_KEY = 'SZILICIUM_BIRODALOM_DATA_V4';
+
+    let game = {
+        cash: 0,
+        totalLifetimeCash: 0,
+        manualClicks: 0,
+        ipoCount: 0,
+        quantumChips: 0,
+        hqLevel: 1,
+        lastActiveTimestamp: Date.now(),
+        buildings: {},
+        buildingMults: {},
+        ownedUpgrades: [],
+        clickMult: 1.0,
+        globalPassiveMult: 1.0,
+        overclock: {
+            active: false,
+            duration: 15,
+            timer: 0
+        }
+    };
+
+    BUILDINGS.forEach(b => {
+        game.buildings[b.id] = 0;
+        game.buildingMults[b.id] = 1;
+    });
+
+    let currentMultiplierMode = 1;
+
+    // Pontos árszámítás többes vásárlás esetén
+    function calculateBulkCostAndQty(building, currentOwned, currentCash, mode) {
+        const r = building.costMult;
+        const b = building.baseCost;
+
+        if (mode === 'MAX') {
+            let count = 0;
+            let totalCost = 0;
+            while (true) {
+                const nextCost = Math.floor(b * Math.pow(r, currentOwned + count));
+                if (totalCost + nextCost <= currentCash) {
+                    totalCost += nextCost;
+                    count++;
+                    if (count >= 1000) break;
+                } else {
+                    break;
+                }
+            }
+            if (count === 0) {
+                return { count: 1, cost: Math.floor(b * Math.pow(r, currentOwned)) };
+            }
+            return { count, cost: totalCost };
+        } else {
+            const count = parseInt(mode);
+            let totalCost = 0;
+            for (let i = 0; i < count; i++) {
+                totalCost += Math.floor(b * Math.pow(r, currentOwned + i));
+            }
+            return { count, cost: totalCost };
+        }
+    }
+
+    function formatNumber(num) {
+        if (num === null || num === undefined || isNaN(num)) return '$0';
+        if (num < 1000) return '$' + Math.floor(num).toLocaleString('hu-HU');
+        const suffixes = ['', ' ezer', ' millió', ' milliárd', ' billió', ' trillió', ' kvadrillió'];
+        const i = Math.floor(Math.log10(Math.abs(num)) / 3);
+        const index = Math.min(i, suffixes.length - 1);
+        const formatted = (num / Math.pow(10, index * 3)).toFixed(2);
+        return '$' + formatted + suffixes[index];
+    }
+
+    function getHQMultiplier() {
+        const hq = HEADQUARTERS.find(h => h.level === game.hqLevel) || HEADQUARTERS[0];
+        return hq.mult;
+    }
+
+    function getPrestigeMultiplier() {
+        return 1.0 + (game.quantumChips * 0.10);
+    }
+
+    function getOverclockMultiplier() {
+        return game.overclock.active ? 3.0 : 1.0;
+    }
+
+    function getClickValue() {
+        return 1 * game.clickMult * getHQMultiplier() * getPrestigeMultiplier() * getOverclockMultiplier();
+    }
+
+    function getPassivePerSec() {
+        let sum = 0;
+        BUILDINGS.forEach(b => {
+            const count = game.buildings[b.id] || 0;
+            const unitMult = game.buildingMults[b.id] || 1;
+            sum += count * b.baseRPS * unitMult;
+        });
+        return sum * game.globalPassiveMult * getHQMultiplier() * getPrestigeMultiplier() * getOverclockMultiplier();
+    }
+
+    function calculatePrestigeGain() {
+        const baseThreshold = 1000000; // $1 millió után érhető el az első Q-Chip
+        if (game.totalLifetimeCash < baseThreshold) return 0;
+        return Math.floor(Math.sqrt(game.totalLifetimeCash / baseThreshold));
+    }
+    </script>
+
+    <script>
+    function saveGame() {
+        game.lastActiveTimestamp = Date.now();
+        localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(game));
+        const ind = document.getElementById('autoSaveIndicator');
+        if (ind) {
+            ind.innerHTML = '<i class="fa-solid fa-circle-check"></i> Mentve';
+            ind.className = 'text-emerald-400 text-[11px]';
+            setTimeout(() => {
+                if (ind) {
+                    ind.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Mentve';
+                    ind.className = 'text-slate-500 text-[11px]';
+                }
+            }, 1000);
+        }
+    }
+
+    function loadGame() {
+        const raw = localStorage.getItem(SAVE_STORAGE_KEY);
+        if (!raw) return false;
+        try {
+            const parsed = JSON.parse(raw);
+            game = Object.assign(game, parsed);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function checkOfflineEarnings() {
+        const now = Date.now();
+        const diffSec = Math.floor((now - (game.lastActiveTimestamp || now)) / 1000);
+
+        if (diffSec > 10) {
+            const rps = getPassivePerSec();
+            if (rps > 0) {
+                const maxOffline = 12 * 3600; // Legfeljebb 12 óra
+                const countedSec = Math.min(diffSec, maxOffline);
+                const earned = rps * countedSec;
+
+                if (earned > 5) {
+                    game.cash += earned;
+                    game.totalLifetimeCash += earned;
+
+                    const hours = Math.floor(countedSec / 3600);
+                    const mins = Math.floor((countedSec % 3600) / 60);
+
+                    document.getElementById('offlineTimeDisplay').textContent = `${hours}ó ${mins}p`;
+                    document.getElementById('offlineEarningsDisplay').textContent = `+${formatNumber(earned)}`;
+                    document.getElementById('offlineModal').classList.remove('hidden');
+                }
+            }
+        }
+        game.lastActiveTimestamp = now;
+    }
+    </script>
+
+    <script>
+    // Lebegő szám kattintáskor
+    function spawnFloatCash(x, y, text) {
+        const container = document.getElementById('floatContainer') || document.body;
+        const el = document.createElement('div');
+        el.className = 'floating-cash text-emerald-400';
+        el.textContent = text;
+        el.style.left = `${x}px`;
+        el.style.top = `${y}px`;
+        container.appendChild(el);
+        setTimeout(() => el.remove(), 850);
+    }
+
+    // 12 Automata gép renderelése
+    function renderBuildings() {
+        const list = document.getElementById('buildingList');
+        if (!list) return;
+        list.innerHTML = '';
+
+        BUILDINGS.forEach(b => {
+            const count = game.buildings[b.id] || 0;
+            const calc = calculateBulkCostAndQty(b, count, game.cash, currentMultiplierMode);
+            const canAfford = game.cash >= calc.cost && calc.cost > 0;
+            const unitMult = game.buildingMults[b.id] || 1;
+            const currentTotalRPS = (count * b.baseRPS * unitMult * game.globalPassiveMult * getHQMultiplier() * getPrestigeMultiplier() * getOverclockMultiplier());
+
+            const card = document.createElement('div');
+            card.className = `glass-panel rounded-2xl p-4 border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+                canAfford ? 'border-cyan-500/40 hover:border-cyan-400' : 'border-slate-800/80 opacity-85'
+            }`;
+
+            card.innerHTML = `
+                <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-xl bg-cyan-950/80 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-xl shrink-0">
+                        <i class="${b.icon}"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="font-orbitron font-bold text-white text-base">${b.name}</h4>
+                            <span class="px-2 py-0.5 rounded-lg text-xs font-black font-orbitron bg-cyber-950 border border-slate-700 text-cyan-300">
+                                ${count} db
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 max-w-md mt-0.5">${b.desc}</p>
+                        <div class="flex items-center gap-3 text-xs font-orbitron mt-1">
+                            <span class="text-slate-400">Egyedi termelés: <strong class="text-cyan-300">+${formatNumber(b.baseRPS * unitMult)}/mp</strong></span>
+                            <span class="text-slate-600">•</span>
+                            <span class="text-emerald-400">Összesen: <strong>+${formatNumber(currentTotalRPS)}/mp</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="shrink-0">
+                    <button class="btn-buy-building w-full sm:w-auto px-5 py-2.5 rounded-xl font-orbitron font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        canAfford 
+                            ? 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-cyber-950 shadow-lg shadow-cyan-500/30 active:scale-95' 
+                            : 'bg-cyber-850 text-slate-500 border border-slate-700 cursor-not-allowed'
+                    }" data-id="${b.id}" ${canAfford ? '' : 'disabled'}>
+                        <i class="fa-solid fa-cart-shopping text-[11px]"></i>
+                        <span>VÉTEL +${calc.count} db (${formatNumber(calc.cost)})</span>
+                    </button>
+                </div>
+            `;
+            list.appendChild(card);
+        });
+
+        list.querySelectorAll('.btn-buy-building').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.getAttribute('data-id');
+                const building = BUILDINGS.find(b => b.id === id);
+                const count = game.buildings[building.id] || 0;
+                const calc = calculateBulkCostAndQty(building, count, game.cash, currentMultiplierMode);
+
+                if (game.cash >= calc.cost && calc.cost > 0) {
+                    game.cash -= calc.cost;
+                    game.buildings[building.id] = count + calc.count;
+                    sfx.buy();
+                    renderBuildings();
+                    updateUI();
+                }
+            });
+        });
+    }
+
+    // Fejlesztések renderelése
+    function renderUpgrades() {
+        const grid = document.getElementById('upgradesGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        let availableCount = 0;
+
+        UPGRADES.forEach(upg => {
+            if (game.ownedUpgrades.includes(upg.id)) return; // Már megvettük
+            if (game.totalLifetimeCash < upg.reqTotal) return; // Még nem fedte fel a cégméret
+
+            const canAfford = game.cash >= upg.cost;
+            if (canAfford) availableCount++;
+
+            const card = document.createElement('div');
+            card.className = `glass-panel rounded-2xl p-5 border flex flex-col justify-between transition-all ${
+                canAfford ? 'border-emerald-500/60 pulse-afford' : 'border-slate-800 opacity-80'
+            }`;
+
+            card.innerHTML = `
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[10px] font-orbitron font-bold uppercase tracking-wider text-cyan-400">FEJLESZTÉS</span>
+                        <span class="font-orbitron font-bold text-xs text-emerald-400">${formatNumber(upg.cost)}</span>
+                    </div>
+                    <h4 class="font-orbitron font-bold text-white text-base">${upg.name}</h4>
+                    <p class="text-xs text-slate-300 mt-1 mb-4">${upg.desc}</p>
+                </div>
+
+                <button class="btn-buy-upgrade w-full py-2.5 rounded-xl font-orbitron font-bold text-xs transition-all cursor-pointer ${
+                    canAfford 
+                        ? 'bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-cyber-950 shadow-lg shadow-emerald-500/30' 
+                        : 'bg-cyber-850 text-slate-500 border border-slate-700 cursor-not-allowed'
+                }" data-id="${upg.id}" ${canAfford ? '' : 'disabled'}>
+                    ${canAfford ? 'FEJLESZTÉS MEGVÉTELE' : 'NINCS ELÉG PÉNZ'}
+                </button>
+            `;
+            grid.appendChild(card);
+        });
+
+        document.getElementById('upgradesAvailableCount').textContent = availableCount.toString();
+
+        grid.querySelectorAll('.btn-buy-upgrade').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const id = e.currentTarget.getAttribute('data-id');
+                const upg = UPGRADES.find(u => u.id === id);
+                if (upg && !game.ownedUpgrades.includes(upg.id) && game.cash >= upg.cost) {
+                    game.cash -= upg.cost;
+                    game.ownedUpgrades.push(upg.id);
+                    upg.apply(game);
+                    sfx.buy();
+                    spawnFloatCash(window.innerWidth / 2, window.innerHeight / 2, `FEJLESZTVE: ${upg.name}!`);
+                    renderUpgrades();
+                    renderBuildings();
+                    updateUI();
+                }
+            });
+        });
+    }
+
+    // Korszakok / HQ renderelése
+    function renderHeadquarters() {
+        const list = document.getElementById('headquartersList');
+        if (!list) return;
+        list.innerHTML = '';
+
+        HEADQUARTERS.forEach(hq => {
+            const isCurrent = game.hqLevel === hq.level;
+            const isUnlocked = game.hqLevel >= hq.level;
+            const canAfford = game.cash >= hq.cost && !isUnlocked;
+
+            const card = document.createElement('div');
+            card.className = `glass-panel rounded-2xl p-5 border flex flex-col justify-between transition-all ${
+                isCurrent 
+                    ? 'border-emerald-500 bg-emerald-950/20' 
+                    : isUnlocked 
+                    ? 'border-slate-800 opacity-60' 
+                    : canAfford 
+                    ? 'border-cyan-400 pulse-afford' 
+                    : 'border-slate-800'
+            }`;
+
+            card.innerHTML = `
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="w-10 h-10 rounded-xl bg-cyber-850 border border-slate-700 flex items-center justify-center text-cyan-400 text-lg">
+                            <i class="${hq.icon}"></i>
+                        </div>
+                        <span class="text-xs font-orbitron font-bold ${isCurrent ? 'text-emerald-400' : 'text-slate-400'}">
+                            ${isCurrent ? 'JELENLEGI SZÉKHÁZ' : isUnlocked ? 'MEGHALADVA' : formatNumber(hq.cost)}
+                        </span>
+                    </div>
+                    <h4 class="font-orbitron font-bold text-white text-base">${hq.level}. Szint: ${hq.name}</h4>
+                    <p class="text-xs text-cyan-300 mt-1 mb-4 font-semibold">${hq.bonus}</p>
+                </div>
+
+                <div>
+                    ${
+                        isCurrent 
+                            ? '<button class="w-full py-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/50 text-emerald-400 text-xs font-orbitron font-bold cursor-not-allowed" disabled>AKTÍV KORSZAK</button>' 
+                            : isUnlocked 
+                            ? '<button class="w-full py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-500 text-xs font-orbitron font-bold cursor-not-allowed" disabled>KORÁBBI SZÉKHÁZ</button>' 
+                            : `<button class="btn-upgrade-hq w-full py-2.5 rounded-xl font-orbitron font-bold text-xs transition-all cursor-pointer ${
+                                canAfford 
+                                    ? 'bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-cyber-950 shadow-lg shadow-cyan-500/30' 
+                                    : 'bg-cyber-850 text-slate-500 border border-slate-700 cursor-not-allowed'
+                              }" data-level="${hq.level}" ${canAfford ? '' : 'disabled'}>
+                                KÖLTÖZÉS ERRE A SZINTRE (${formatNumber(hq.cost)})
+                              </button>`
+                    }
+                </div>
+            `;
+            list.appendChild(card);
+        });
+
+        list.querySelectorAll('.btn-upgrade-hq').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const lvl = parseInt(e.currentTarget.getAttribute('data-level'));
+                const hq = HEADQUARTERS.find(h => h.level === lvl);
+                if (hq && game.cash >= hq.cost) {
+                    game.cash -= hq.cost;
+                    game.hqLevel = lvl;
+                    sfx.buy();
+                    spawnFloatCash(window.innerWidth / 2, window.innerHeight / 2, `ÚJ KORSZAK: ${hq.name}!`);
+                    renderHeadquarters();
+                    renderBuildings();
+                    updateUI();
+                }
+            });
+        });
+    }
+
+    function updateUI() {
+        const rps = getPassivePerSec();
+        const clickVal = getClickValue();
+
+        document.getElementById('cashDisplay').textContent = formatNumber(game.cash);
+        document.getElementById('perSecDisplay').textContent = `+${formatNumber(rps)}/mp`;
+        document.getElementById('clickWorthText').textContent = `+${formatNumber(clickVal)} / katt`;
+        document.getElementById('qChipsDisplay').textContent = `${game.quantumChips} db`;
+
+        // Fejléc Korszak Címke
+        const currentHq = HEADQUARTERS.find(h => h.level === game.hqLevel) || HEADQUARTERS[0];
+        document.getElementById('companyTierBadge').textContent = `${currentHq.level}. KORSZAK: ${currentHq.name.toUpperCase()}`;
+
+        // Statisztikák
+        document.getElementById('statTotalCash').textContent = formatNumber(game.totalLifetimeCash);
+        document.getElementById('statClicks').textContent = game.manualClicks.toLocaleString('hu-HU');
+        document.getElementById('statQChips').textContent = `${game.quantumChips} db (+${game.quantumChips * 10}% termelés)`;
+        document.getElementById('statIpos').textContent = game.ipoCount.toString();
+
+        // Tőzsde (Prestige / IPO) adatok
+        const potentialChips = calculatePrestigeGain();
+        document.getElementById('ipoLifetimeDisplay').textContent = formatNumber(game.totalLifetimeCash);
+        document.getElementById('ipoGainDisplay').textContent = `+${potentialChips} Q-Chip`;
+
+        const ipoBtn = document.getElementById('ipoExecuteBtn');
+        if (ipoBtn) {
+            ipoBtn.disabled = potentialChips <= 0;
+            if (potentialChips > 0) {
+                ipoBtn.textContent = `TŐZSDÉRE LÉPÉS (+${potentialChips} Q-CHIP)`;
+            } else {
+                ipoBtn.textContent = `TŐZSDÉRE LÉPÉS ($1.00 MILLIÓ UTÁN)`;
+            }
+        }
+    }
+    </script>
+
+    <script>
+    // Tab Navigáció
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const target = e.currentTarget.getAttribute('data-tab');
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                b.classList.remove('active', 'bg-cyan-500', 'text-cyber-950');
+                b.classList.add('text-slate-400');
+            });
+            e.currentTarget.classList.add('active', 'bg-cyan-500', 'text-cyber-950');
+            e.currentTarget.classList.remove('text-slate-400');
+
+            document.querySelectorAll('.tab-pane').forEach(p => {
+                p.classList.add('hidden');
+                p.classList.remove('block');
+            });
+            const pane = document.getElementById(target);
+            if (pane) {
+                pane.classList.remove('hidden');
+                pane.classList.add('block');
+            }
+
+            if (target === 'tab-factory') renderBuildings();
+            if (target === 'tab-upgrades') renderUpgrades();
+            if (target === 'tab-headquarters') renderHeadquarters();
+        });
+    });
+
+    // Vásárlási mennyiég gombok (1x, 10x, 100x, MAX)
+    document.querySelectorAll('.bulk-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.bulk-btn').forEach(b => {
+                b.classList.remove('bg-cyan-500', 'text-cyber-950');
+                b.classList.add('text-slate-300');
+            });
+            e.currentTarget.classList.add('bg-cyan-500', 'text-cyber-950');
+            e.currentTarget.classList.remove('text-slate-300');
+
+            currentMultiplierMode = e.currentTarget.getAttribute('data-multiplier');
+            renderBuildings();
+        });
+    });
+
+    // Fő Szilícium Lapka Kattintó
+    const wafer = document.getElementById('waferClicker');
+    wafer.addEventListener('click', (e) => {
+        const val = getClickValue();
+        game.cash += val;
+        game.totalLifetimeCash += val;
+        game.manualClicks++;
+        sfx.click();
+
+        const rect = wafer.getBoundingClientRect();
+        const clientX = e.clientX || (rect.left + rect.width / 2);
+        const clientY = e.clientY || (rect.top + rect.height / 2);
+        spawnFloatCash(clientX, clientY, `+${formatNumber(val)}`);
+
+        updateUI();
+        renderBuildings();
+        renderUpgrades();
+    });
+
+    // Túlhúzás (Overclock 3x szorzó 15 mp-ig)
+    const ocBtn = document.getElementById('overclockBtn');
+    ocBtn.addEventListener('click', () => {
+        if (!game.overclock.active) {
+            game.overclock.active = true;
+            game.overclock.timer = game.overclock.duration;
+            sfx.overclock();
+            document.getElementById('overclockTimerText').textContent = '3X SEBESSÉG!';
+            document.getElementById('overclockTimerText').classList.add('text-amber-400');
+            updateUI();
+        }
+    });
+
+    // Tőzsdei Újrakezdés (IPO / Prestige)
+    document.getElementById('ipoExecuteBtn').addEventListener('click', () => {
+        const gainedChips = calculatePrestigeGain();
+        if (gainedChips <= 0) return;
+
+        game.quantumChips += gainedChips;
+        game.ipoCount++;
+        game.cash = 0;
+        game.totalLifetimeCash = 0;
+        game.hqLevel = 1;
+        game.clickMult = 1.0;
+        game.globalPassiveMult = 1.0;
+        game.ownedUpgrades = [];
+
+        BUILDINGS.forEach(b => {
+            game.buildings[b.id] = 0;
+            game.buildingMults[b.id] = 1;
+        });
+
+        sfx.prestige();
+        saveGame();
+        renderBuildings();
+        renderUpgrades();
+        renderHeadquarters();
+        updateUI();
+
+        document.querySelector('[data-tab="tab-factory"]').click();
+    });
+
+    // Hang Be/Ki kapcsolása
+    document.getElementById('soundToggleBtn').addEventListener('click', () => {
+        sfx.muted = !sfx.muted;
+        const icon = document.getElementById('soundIcon');
+        if (sfx.muted) {
+            icon.className = 'fa-solid fa-volume-xmark text-rose-400';
+        } else {
+            icon.className = 'fa-solid fa-volume-high text-cyan-400';
+            sfx.click();
+        }
+    });
+
+    // Offline ablak bezárása
+    document.getElementById('claimOfflineBtn').addEventListener('click', () => {
+        document.getElementById('offlineModal').classList.add('hidden');
+        sfx.buy();
+        updateUI();
+    });
+
+    // Mentési Kód Exportálása
+    document.getElementById('exportCodeBtn').addEventListener('click', () => {
+        const raw = btoa(encodeURIComponent(JSON.stringify(game)));
+        const modal = document.getElementById('codeModal');
+        document.getElementById('codeModalTitle').textContent = 'Mentési Kód Exportálása';
+        document.getElementById('codeModalDesc').textContent = 'Másold ki az alábbi szöveget (Ctrl+C), és vidd át a másik gépre:';
+        const txt = document.getElementById('codeModalTextarea');
+        txt.value = raw;
+        modal.classList.remove('hidden');
+
+        document.getElementById('codeModalActionBtn').onclick = () => {
+            txt.select();
+            document.execCommand('copy');
+            modal.classList.add('hidden');
+        };
+    });
+
+    // Mentési Kód Importálása
+    document.getElementById('importCodeBtn').addEventListener('click', () => {
+        const modal = document.getElementById('codeModal');
+        document.getElementById('codeModalTitle').textContent = 'Mentési Kód Betöltése';
+        document.getElementById('codeModalDesc').textContent = 'Illeszd be ide a korábban kimásolt mentési kódot:';
+        const txt = document.getElementById('codeModalTextarea');
+        txt.value = '';
+        modal.classList.remove('hidden');
+
+        document.getElementById('codeModalActionBtn').onclick = () => {
+            try {
+                const decoded = decodeURIComponent(atob(txt.value.trim()));
+                const parsed = JSON.parse(decoded);
+                game = Object.assign(game, parsed);
+                saveGame();
+                location.reload();
+            } catch (err) {}
+        };
+    });
+
+    document.getElementById('codeModalCancelBtn').addEventListener('click', () => {
+        document.getElementById('codeModal').classList.add('hidden');
+    });
+
+    // Adatok teljes törlése
+    document.getElementById('wipeSaveBtn').addEventListener('click', () => {
+        localStorage.removeItem(SAVE_STORAGE_KEY);
+        location.reload();
+    });
+
+    // Fő Időzítő Ciklus (100 ms = 10 tick másodpercenként a vajpuha termelésért)
+    let secondCounter = 0;
+    setInterval(() => {
+        const deltaSec = 0.1;
+        const rps = getPassivePerSec();
+        const earned = rps * deltaSec;
+
+        if (earned > 0) {
+            game.cash += earned;
+            game.totalLifetimeCash += earned;
+        }
+
+        // Túlhúzás (Overclock) időzítő
+        if (game.overclock.active) {
+            game.overclock.timer -= deltaSec;
+            const pct = Math.max(0, (game.overclock.timer / game.overclock.duration) * 100);
+            document.getElementById('overclockProgress').style.width = `${pct}%`;
+
+            if (game.overclock.timer <= 0) {
+                game.overclock.active = false;
+                document.getElementById('overclockTimerText').textContent = 'KÉSZ (x1.0)';
+                document.getElementById('overclockTimerText').classList.remove('text-amber-400');
+                document.getElementById('overclockProgress').style.width = '0%';
+                updateUI();
+            }
+        }
+
+        secondCounter += deltaSec;
+        if (secondCounter >= 1.0) {
+            secondCounter = 0;
+            updateUI();
+            saveGame();
+        }
+    }, 100);
+
+    // Kezdő inicializálás
+    window.addEventListener('load', () => {
+        loadGame();
+        checkOfflineEarnings();
+        renderBuildings();
+        renderUpgrades();
+        renderHeadquarters();
+        updateUI();
+    });
+    </script>
+</body>
+</html>
